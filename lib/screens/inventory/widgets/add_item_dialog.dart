@@ -6,8 +6,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:inventocharm/services/pocketbase_client.dart';
 import 'package:inventocharm/components/constants/colors.dart';
 import 'package:inventocharm/components/my_text_field.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:qr_code_scanner/qr_code_scanner.dart';
 
 class AddItemDialog extends StatefulWidget {
   @override
@@ -27,8 +27,7 @@ class _AddItemDialogState extends State<AddItemDialog> {
   String? qrCodeResult;
   bool _isUploading = false;
 
-  final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
-  QRViewController? qrController;
+  MobileScannerController? _scannerController;
 
   Future<void> _getImage() async {
     try {
@@ -97,6 +96,12 @@ class _AddItemDialogState extends State<AddItemDialog> {
       );
       return null;
     }
+  }
+
+  @override
+  void dispose() {
+    _scannerController?.dispose();
+    super.dispose();
   }
 
   Future<void> _saveItemData(String imageUrl) async {
@@ -251,17 +256,24 @@ class _AddItemDialogState extends State<AddItemDialog> {
                             child: SizedBox(
                               width: scanSize,
                               height: scanSize,
-                              child: QRView(
-                                key: qrKey,
-                                onQRViewCreated: (controller) {
-                                  this.qrController = controller;
-                                  controller.scannedDataStream.listen(
-                                    (scanData) {
-                                      setState(() {
-                                        qrCodeResult = scanData.code;
-                                      });
-                                    },
-                                  );
+                              child: MobileScanner(
+                                controller: _scannerController ??=
+                                    MobileScannerController(),
+                                onDetect: (capture) {
+                                  final barcode = capture.barcodes.firstOrNull;
+                                  final scannedValue = barcode?.rawValue;
+                                  if (scannedValue == null ||
+                                      scannedValue.isEmpty) {
+                                    return;
+                                  }
+
+                                  setState(() {
+                                    qrCodeResult = scannedValue;
+                                  });
+
+                                  if (Navigator.of(context).canPop()) {
+                                    Navigator.of(context).pop();
+                                  }
                                 },
                               ),
                             ),

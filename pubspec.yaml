@@ -23,10 +23,10 @@ dependencies:
   permission_handler: ^11.3.0
   pocketbase: ^0.23.0
   persistent_bottom_nav_bar: ^6.2.1
-  qr_code_scanner: ^1.0.1
   smooth_page_indicator: ^1.1.0
   user_repository:
     path: packages/user_repository
+  mobile_scanner: ^7.4.2
 
 dev_dependencies:
   flutter_test:
