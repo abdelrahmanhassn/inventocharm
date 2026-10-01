@@ -1,4 +1,4 @@
-import 'package:inventocharm/services/pocketbase_client.dart';
+import 'package:inventocharm/services/supabase_client.dart';
 
 class ItemService {
   // Add a new item
@@ -11,7 +11,8 @@ class ItemService {
     required String cost,
   }) async {
     try {
-      await pocketBase.collection('items').create(body: {
+      await supabase.from('items').insert({
+        'owner_id': supabase.auth.currentUser!.id,
         'name': name,
         'price': price,
         'quantity': quantity,
@@ -35,14 +36,14 @@ class ItemService {
     String? cost,
   }) async {
     try {
-      await pocketBase.collection('items').update(itemId, body: {
+      await supabase.from('items').update({
         if (name != null) 'name': name,
         if (price != null) 'price': price,
         if (quantity != null) 'quantity': quantity,
         if (image != null) 'image': image,
         if (description != null) 'description': description,
         if (cost != null) 'cost': cost,
-      });
+      }).eq('id', itemId);
     } catch (e) {
       print('Error updating item: $e');
     }
@@ -51,7 +52,7 @@ class ItemService {
   // Delete an item
   Future<void> deleteItem(String itemId) async {
     try {
-      await pocketBase.collection('items').delete(itemId);
+      await supabase.from('items').delete().eq('id', itemId);
     } catch (e) {
       print('Error deleting item: $e');
     }
@@ -59,12 +60,11 @@ class ItemService {
 
   // Get all items
   Future<List<Map<String, dynamic>>> getItems() async {
-    final rows = await pocketBase.collection('items').getFullList();
-    return rows.map((row) => {'id': row.id, ...row.data}).toList();
+    final rows = await supabase.from('items').select();
+    return rows;
   }
 
   Future<Map<String, dynamic>> getItem(String itemId) async {
-    final row = await pocketBase.collection('items').getOne(itemId);
-    return {'id': row.id, ...row.data};
+    return await supabase.from('items').select().eq('id', itemId).single();
   }
 }

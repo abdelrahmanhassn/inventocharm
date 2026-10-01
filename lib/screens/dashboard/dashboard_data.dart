@@ -1,16 +1,15 @@
-import 'package:inventocharm/services/pocketbase_client.dart';
+import 'package:inventocharm/services/supabase_client.dart';
 
 class DashboardData {
   static Future<Map<String, String>> fetchData() async {
     try {
-      final rows = await pocketBase.collection('items').getFullList();
+      final rows = await supabase.from('items').select();
 
       int totalProducts = rows.length;
       int totalItemCost = 0;
       int totalPrices = 0;
 
-      for (final row in rows) {
-        final data = row.data;
+      for (final data in rows) {
         if (data['cost'] != null &&
             data['price'] != null &&
             data['quantity'] != null) {

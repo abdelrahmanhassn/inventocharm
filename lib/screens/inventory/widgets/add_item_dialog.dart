@@ -1,9 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
-import 'package:inventocharm/services/pocketbase_client.dart';
+import 'package:inventocharm/services/supabase_client.dart';
 import 'package:inventocharm/components/constants/colors.dart';
 import 'package:inventocharm/components/my_text_field.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -112,18 +111,24 @@ class _AddItemDialogState extends State<AddItemDialog> {
       String description = _descriptionController.text;
       String cost = _costController.text;
 
-      final image = await http.MultipartFile.fromPath('image', imageUrl);
-      await pocketBase.collection('items').create(
-        body: {
-          'name': itemName,
-          'price': price,
-          'quantity': quantity,
-          'description': description,
-          'cost': cost,
-          'code': qrCodeResult,
-        },
-        files: [image],
-      );
+      final storagePath = '${supabase.auth.currentUser!.id}/'
+          '${DateTime.now().microsecondsSinceEpoch}_'
+          '${_imageFile!.uri.pathSegments.last}';
+      await supabase.storage
+          .from('item-images')
+          .upload(storagePath, _imageFile!);
+      final publicImageUrl =
+          supabase.storage.from('item-images').getPublicUrl(storagePath);
+      await supabase.from('items').insert({
+        'owner_id': supabase.auth.currentUser!.id,
+        'name': itemName,
+        'price': price,
+        'quantity': int.parse(quantity),
+        'description': description,
+        'cost': double.parse(cost),
+        'code': qrCodeResult,
+        'image': publicImageUrl,
+      });
 
       // Item saved successfully
       Navigator.pop(context); // Close the dialog

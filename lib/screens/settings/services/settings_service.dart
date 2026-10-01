@@ -1,10 +1,16 @@
-import 'package:inventocharm/services/pocketbase_client.dart';
+import 'package:inventocharm/services/supabase_client.dart';
 
 class SettingsService {
   Future<Map<String, dynamic>?> getUserData(String userId) async {
     try {
-      final record = await pocketBase.collection('users').getOne(userId);
-      return {'id': record.id, ...record.data};
+      final record = await supabase
+          .from('profiles')
+          .select()
+          .eq('id', userId)
+          .maybeSingle();
+      return record == null
+          ? null
+          : {'id': record['id'], 'displayName': record['name'], ...record};
     } catch (e) {
       print("Error getting user data: $e");
       return null;

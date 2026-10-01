@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:pocketbase/pocketbase.dart';
-import 'package:inventocharm/services/pocketbase_client.dart';
+import 'package:inventocharm/services/supabase_client.dart';
 import 'package:inventocharm/components/app_bar/custom_app_bar.dart';
 import 'package:inventocharm/components/constants/colors.dart';
 import 'package:inventocharm/components/constants/helpers/helper_functions.dart';
@@ -30,7 +29,7 @@ class _InventoryState extends State<Inventory> {
 
   Future<void> _refreshItems() async {
     try {
-      await pocketBase.collection('items').getList(page: 1, perPage: 1);
+      await supabase.from('items').select('id').limit(1);
       setState(() {});
     } catch (e) {
       print('Error refreshing items: $e');
@@ -104,8 +103,8 @@ class _InventoryState extends State<Inventory> {
                     left: 16.0, right: 16.0, bottom: 16.0),
                 child: SizedBox(
                   height: MediaQuery.sizeOf(context).height * 0.6,
-                  child: FutureBuilder<List<RecordModel>>(
-                    future: pocketBase.collection('items').getFullList(),
+                  child: FutureBuilder<List<Map<String, dynamic>>>(
+                    future: supabase.from('items').select(),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const Center(
@@ -121,16 +120,7 @@ class _InventoryState extends State<Inventory> {
                       }
 
                       final searchText = _searchController.text.trim();
-                      final items = (snapshot.data ?? <RecordModel>[])
-                          .map((record) => {
-                                'id': record.id,
-                                ...record.data,
-                                if (record.getStringValue('image').isNotEmpty)
-                                  'image': pocketBase.files
-                                      .getUrl(record,
-                                          record.getStringValue('image'))
-                                      .toString(),
-                              })
+                      final items = (snapshot.data ?? <Map<String, dynamic>>[])
                           .where((item) {
                         final name =
                             item['name']?.toString().toLowerCase() ?? '';

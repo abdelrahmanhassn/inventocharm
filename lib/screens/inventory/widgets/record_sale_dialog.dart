@@ -158,7 +158,7 @@ class _RecordSaleDialogState extends State<RecordSaleDialog> {
       String customerName = _nameController.text;
       String phoneNumber = _phoneController.text;
 
-      // Record sale using the PocketBase service.
+      // Record the sale and update stock through the backend transaction.
       await RecordSaleService.recordSale(
         customerName,
         phoneNumber,

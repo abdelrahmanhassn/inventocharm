@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:pocketbase/pocketbase.dart';
-import 'package:inventocharm/services/pocketbase_client.dart';
+import 'package:inventocharm/services/supabase_client.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:inventocharm/components/app_bar/custom_app_bar.dart';
 import 'package:inventocharm/components/constants/colors.dart';
@@ -60,9 +59,11 @@ class _SalesHistoryState extends State<SalesHistory> {
               onRefresh: _refreshData,
               child: SizedBox(
                 height: MediaQuery.of(context).size.height - 200,
-                child: FutureBuilder<List<RecordModel>>(
-                  future:
-                      pocketBase.collection('sales').getFullList(sort: '-date'),
+                child: FutureBuilder<List<Map<String, dynamic>>>(
+                  future: supabase
+                      .from('sales')
+                      .select()
+                      .order('date', ascending: false),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(
@@ -90,9 +91,7 @@ class _SalesHistoryState extends State<SalesHistory> {
                       );
                     }
 
-                    final salesData = snapshot.data!
-                        .map((record) => {'id': record.id, ...record.data})
-                        .toList();
+                    final salesData = snapshot.data!;
 
                     return ListView.builder(
                       physics: const AlwaysScrollableScrollPhysics(),

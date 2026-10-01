@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:inventocharm/services/pocketbase_client.dart';
+import 'package:inventocharm/services/supabase_client.dart';
 import 'package:inventocharm/components/constants/colors.dart';
 
 class ClearSalesButton extends StatelessWidget {
@@ -24,7 +24,7 @@ class ClearSalesButton extends StatelessWidget {
 
   Future<void> _clearSalesCollection(BuildContext context) async {
     try {
-      final rows = await pocketBase.collection('sales').getFullList();
+      final rows = await supabase.from('sales').select('id');
 
       if (rows.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -35,9 +35,7 @@ class ClearSalesButton extends StatelessWidget {
         return;
       }
 
-      for (final row in rows) {
-        await pocketBase.collection('sales').delete(row.id);
-      }
+      await supabase.from('sales').delete().not('id', 'is', null);
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
