@@ -15,15 +15,11 @@ class SignUpBloc extends Bloc<SignUpEvent, SignUpState> {
       emit(SignUpProcess());
       try {
         await _userRepository.signUp(event.user, event.password);
-        emit(const SignUpSuccess());
-      } catch (e) {
-        final message = e.toString();
-        emit(SignUpFailure(
-          message: message.contains('ClientException')
-              ? 'Could not connect to PocketBase or create the account. '
-                  'Check the phone network and PocketBase users collection rules.'
-              : message,
+        emit(SignUpSuccess(
+          requiresEmailConfirmation: _userRepository.requiresEmailConfirmation,
         ));
+      } catch (e) {
+        emit(SignUpFailure(message: e.toString()));
       }
     });
   }

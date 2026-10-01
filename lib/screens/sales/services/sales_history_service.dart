@@ -1,16 +1,15 @@
-import 'package:inventocharm/services/pocketbase_client.dart';
+import 'package:inventocharm/services/supabase_client.dart';
 
 class SalesDataService {
   static Future<List<Map<String, dynamic>>> fetchSalesData() async {
     try {
-      final rows = await pocketBase.collection('sales').getFullList();
+      final rows = await supabase.from('sales').select();
 
       print('Fetched ${rows.length} records from the "sales" collection');
 
       List<Map<String, dynamic>> salesData = [];
 
-      for (final record in rows) {
-        final doc = record.data;
+      for (final doc in rows) {
         final date = doc['date'];
         if (date != null) {
         } else {

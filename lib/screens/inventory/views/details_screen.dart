@@ -78,13 +78,11 @@ class _DetailsScreenState extends State<DetailsScreen> {
                         ),
                         TextButton(
                           onPressed: () async {
-                            // Update the item quantity in PocketBase.
                             try {
                               // Parse the new quantity
                               int newQuantity =
                                   int.parse(quantityController.text);
 
-                              // Update the item in PocketBase with the new quantity.
                               await ItemService().updateItem(widget.data['id'],
                                   quantity: newQuantity.toString());
 
@@ -137,7 +135,6 @@ class _DetailsScreenState extends State<DetailsScreen> {
                 );
 
                 if (confirmDelete == true) {
-                  // Delete the item from PocketBase.
                   try {
                     await ItemService()
                         .deleteItem(widget.data['id']); // Corrected line
