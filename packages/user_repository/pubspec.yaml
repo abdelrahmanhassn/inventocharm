@@ -1,0 +1,24 @@
+name: user_repository
+description: the repo that handles users
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.4 <4.0.0'
+dependencies:
+  cupertino_icons: ^1.0.2
+  flutter:
+    sdk: flutter
+  font_awesome_flutter: ^10.7.0
+  persistent_bottom_nav_bar: ^6.2.1
+  equatable: ^2.0.5
+  pocketbase: ^0.23.0
+
+dev_dependencies:
+
+  flutter_lints: ^3.0.1
+  flutter_test:
+    sdk: flutter
+flutter:
+  uses-material-design: true
+  
