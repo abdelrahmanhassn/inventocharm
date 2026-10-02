@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:inventocharm/screens/dashboard/views/dashboard.dart';
-import 'package:inventocharm/screens/inventory/views/inventory.dart'
-    hide CustomColors;
+import 'package:inventocharm/screens/inventory/views/inventory.dart';
 import 'package:inventocharm/screens/sales/views/sales.dart';
 import 'package:inventocharm/screens/settings/views/settings.dart';
 
@@ -19,13 +18,14 @@ class PersistentTabScreen extends StatefulWidget {
 
 class _PersistentTabScreenState extends State<PersistentTabScreen> {
   late PersistentTabController _controller;
+  final _dashboardKey = GlobalKey<DashboardState>();
 
   List<Widget> _buildScreens() {
     return [
-      const Dashboard(),
+      Dashboard(key: _dashboardKey),
       const Inventory(),
       const SalesHistory(),
-      Settings()
+      const Settings()
     ];
   }
 
@@ -69,6 +69,13 @@ class _PersistentTabScreenState extends State<PersistentTabScreen> {
     return PersistentTabView(
       context,
       controller: _controller,
+      onItemSelected: (index) {
+        if (index == 0) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _dashboardKey.currentState?.refresh();
+          });
+        }
+      },
       screens: _buildScreens(),
       items: _navBarsItems(),
       confineToSafeArea: true,

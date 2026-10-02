@@ -1,30 +1,43 @@
 import 'package:flutter/material.dart';
+
 import 'package:inventocharm/components/constants/colors.dart';
 import 'package:inventocharm/components/my_text_field.dart';
+import 'package:inventocharm/models/item.dart';
 import 'package:inventocharm/screens/inventory/services/record_sale_service.dart';
 import 'package:inventocharm/screens/inventory/widgets/sale_record_item.dart';
 
 class RecordSaleDialog extends StatefulWidget {
-  final List<Map<String, dynamic>> selectedItems;
-  final Function(List<Map<String, dynamic>>) onSaleRecorded;
+  const RecordSaleDialog({
+    super.key,
+    required this.selectedItems,
+    required this.onSaleRecorded,
+  });
 
-  RecordSaleDialog({required this.selectedItems, required this.onSaleRecorded});
+  final List<Item> selectedItems;
+  final void Function(List<Item>) onSaleRecorded;
 
   @override
-  _RecordSaleDialogState createState() => _RecordSaleDialogState();
+  State<RecordSaleDialog> createState() => _RecordSaleDialogState();
+}
+
+/// Wrapper that tracks how many units of a given item are being sold.
+class _SaleLine {
+  final Item item;
+  int quantity;
+
+  _SaleLine({required this.item, this.quantity = 1});
 }
 
 class _RecordSaleDialogState extends State<RecordSaleDialog> {
   final _formKey = GlobalKey<FormState>();
-  late TextEditingController _nameController;
-  late TextEditingController _phoneController;
+  final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
 
-  @override
-  void initState() {
-    super.initState();
-    _nameController = TextEditingController();
-    _phoneController = TextEditingController();
-  }
+  /// Local state, doesn't mutate widget.selectedItems.
+  late final List<_SaleLine> _lines =
+      widget.selectedItems.map((item) => _SaleLine(item: item)).toList();
+
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -46,70 +59,36 @@ class _RecordSaleDialogState extends State<RecordSaleDialog> {
               MyTextField(
                 controller: _nameController,
                 keyboardType: TextInputType.name,
-                hintText: "Customer Name",
+                hintText: 'Customer Name',
                 obscureText: false,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter customer name';
-                  }
-                  return null;
-                },
+                validator: (value) => (value == null || value.isEmpty)
+                    ? 'Please enter customer name'
+                    : null,
               ),
               const SizedBox(height: 8),
               MyTextField(
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
                 obscureText: false,
-                hintText: "Phone Number",
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter phone number';
-                  }
-                  return null;
-                },
+                hintText: 'Phone Number',
+                validator: (value) => (value == null || value.isEmpty)
+                    ? 'Please enter phone number'
+                    : null,
               ),
               const SizedBox(height: 20),
-              for (var selectedItem in widget.selectedItems)
+              for (final line in _lines)
                 SaleRecordItem(
-                  itemName: selectedItem['name'],
-                  quantity: (selectedItem['saleQuantity'] as int?) ?? 0,
-                  price: double.tryParse(selectedItem['price'] ?? '0') ?? 0.0,
-                  onAdd: () {
-                    setState(() {
-                      var currentItemIndex = widget.selectedItems.indexWhere(
-                          (item) => item['name'] == selectedItem['name']);
-                      if (currentItemIndex != -1) {
-                        var currentSaleQuantity =
-                            (widget.selectedItems[currentItemIndex]
-                                    ['saleQuantity'] as int?) ??
-                                0;
-                        widget.selectedItems[currentItemIndex]['saleQuantity'] =
-                            currentSaleQuantity + 1;
-                      } else {
-                        widget.selectedItems
-                            .add({...selectedItem, 'saleQuantity': 1});
-                      }
-                    });
-                  },
-                  onRemove: () {
-                    setState(() {
-                      var currentItemIndex = widget.selectedItems.indexWhere(
-                          (item) => item['name'] == selectedItem['name']);
-                      if (currentItemIndex != -1) {
-                        var currentSaleQuantity =
-                            (widget.selectedItems[currentItemIndex]
-                                    ['saleQuantity'] as int?) ??
-                                0;
-                        if (currentSaleQuantity > 0) {
-                          widget.selectedItems[currentItemIndex]
-                              ['saleQuantity'] = currentSaleQuantity - 1;
-                          if (currentSaleQuantity == 1) {
-                            widget.selectedItems.removeAt(currentItemIndex);
-                          }
-                        }
-                      }
-                    });
-                  },
+                  itemName: line.item.name,
+                  quantity: line.quantity,
+                  price: line.item.price,
+                  onAdd: () => setState(() => line.quantity++),
+                  onRemove: () => setState(() {
+                    if (line.quantity <= 1) {
+                      _lines.remove(line);
+                    } else {
+                      line.quantity--;
+                    }
+                  }),
                 ),
             ],
           ),
@@ -117,60 +96,66 @@ class _RecordSaleDialogState extends State<RecordSaleDialog> {
       ),
       actions: [
         TextButton(
-          style: ButtonStyle(
-            backgroundColor: MaterialStateProperty.all(CustomColors.error),
+          style: TextButton.styleFrom(
+            backgroundColor: CustomColors.error,
           ),
-          onPressed: () {
-            widget.selectedItems.clear();
-            Navigator.pop(context);
-          },
-          child: Text(
+          onPressed: _isSubmitting ? null : () => Navigator.pop(context),
+          child: const Text(
             'Cancel',
             style: TextStyle(fontSize: 13, color: CustomColors.white),
           ),
         ),
         TextButton(
-          style: ButtonStyle(
-            backgroundColor: MaterialStateProperty.all(CustomColors.success),
+          style: TextButton.styleFrom(
+            backgroundColor: CustomColors.success,
           ),
-          onPressed: () {
-            if (_formKey.currentState!.validate()) {
-              _recordSale();
-            }
-          },
-          child: Text(
-            'Record',
-            style: TextStyle(fontSize: 13, color: CustomColors.white),
-          ),
+          onPressed: _isSubmitting ? null : _recordSale,
+          child: _isSubmitting
+              ? const SizedBox(
+                  height: 16,
+                  width: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text(
+                  'Record',
+                  style: TextStyle(fontSize: 13, color: CustomColors.white),
+                ),
         ),
       ],
     );
   }
 
-  void _recordSale() async {
+  Future<void> _recordSale() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    if (_lines.isEmpty) return;
+
+    setState(() => _isSubmitting = true);
+
     try {
-      if (widget.selectedItems.isEmpty) {
-        // Handle case when no items are selected
-        return;
-      }
-
-      // Get customer details
-      String customerName = _nameController.text;
-      String phoneNumber = _phoneController.text;
-
-      // Record the sale and update stock through the backend transaction.
       await RecordSaleService.recordSale(
-        customerName,
-        phoneNumber,
-        widget.selectedItems,
+        _nameController.text.trim(),
+        _phoneController.text.trim(),
+        [
+          for (final line in _lines)
+            {
+              'id': line.item.id,
+              'name': line.item.name,
+              'price': line.item.price,
+              'saleQuantity': line.quantity,
+            },
+        ],
       );
 
-      // Update UI and close dialog
+      if (!mounted) return;
       widget.onSaleRecorded(widget.selectedItems);
-      widget.selectedItems.clear();
       Navigator.pop(context);
-    } catch (e) {
-      print('Error recording sale: $e');
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not record sale: $error')),
+      );
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 }

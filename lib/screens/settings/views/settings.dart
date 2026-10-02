@@ -4,7 +4,6 @@ import 'package:inventocharm/components/app_bar/custom_app_bar.dart';
 import 'package:inventocharm/components/constants/colors.dart';
 import 'package:inventocharm/components/widgets/primary_header.dart';
 import 'package:inventocharm/screens/auth/blocs/authentication_bloc/authentication_bloc.dart';
-import 'package:inventocharm/screens/auth/blocs/signin_bloc/signin_bloc.dart';
 import 'package:inventocharm/screens/settings/services/settings_service.dart';
 import 'package:inventocharm/screens/settings/widgets/clear_sales_button.dart';
 import 'package:inventocharm/screens/settings/widgets/export_to_cvs_button.dart';
@@ -153,8 +152,23 @@ class SettingsScreen extends StatelessWidget {
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16)),
                     ),
-                    onPressed: () {
-                      context.read<SignInBloc>().add(SignOutRequired());
+                    onPressed: () async {
+                      final messenger = ScaffoldMessenger.of(context);
+                      try {
+                        await context
+                            .read<AuthenticationBloc>()
+                            .userRepository
+                            .logOut();
+                      } catch (error) {
+                        if (!context.mounted) return;
+                        messenger
+                          ..hideCurrentSnackBar()
+                          ..showSnackBar(
+                            SnackBar(
+                              content: Text('Could not sign out: $error'),
+                            ),
+                          );
+                      }
                     },
                     child: Text('Sign Out')),
               ],

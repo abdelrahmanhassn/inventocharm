@@ -10,11 +10,17 @@ class Search extends StatefulWidget {
   const Search({Key? key}) : super(key: key);
 
   @override
-  State<Search> createState() => _DashboardState();
+  State<Search> createState() => _SearchState();
 }
 
-class _DashboardState extends State<Search> {
+class _SearchState extends State<Search> {
   final _controller = PageController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -60,19 +66,19 @@ class _DashboardState extends State<Search> {
                             DashboardItem(
                               itemColor: CustomColors.white,
                               icon: FontAwesomeIcons.boxesStacked,
-                              iconSize: 35,
-                              iconColor: CustomColors.primaryColor,
                               title: 'Total Products',
                               number: '275',
+                              valueColor: CustomColors.primaryColor,
+                              valueFontSize: 24,
                             ),
                             DashboardItem(
                               itemColor: CustomColors.white,
                               icon: FontAwesomeIcons.moneyBills,
-                              iconSize: 35,
-                              iconColor: CustomColors.primaryColor,
                               title: 'Total Sales',
-                              leading: '\$',
-                              number: '9,000',
+                              number: '9000',
+                              isCurrency: true,
+                              valueColor: CustomColors.primaryColor,
+                              valueFontSize: 24,
                             ),
                           ])),
                   const SizedBox(height: 20),
