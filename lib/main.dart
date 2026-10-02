@@ -9,12 +9,18 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   Bloc.observer = SimpleBlocObserver();
   const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
-  const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
-  if (supabaseUrl.isEmpty || supabaseAnonKey.isEmpty) {
+  const supabaseKey = String.fromEnvironment(
+    'SUPABASE_PUBLISHABLE_KEY',
+    defaultValue: String.fromEnvironment('SUPABASE_ANON_KEY'),
+  );
+  if (supabaseUrl.isEmpty || supabaseKey.isEmpty) {
     throw StateError(
-      'Set SUPABASE_URL and SUPABASE_ANON_KEY with --dart-define.',
+      'Set SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY with --dart-define.',
     );
   }
-  await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
+  await Supabase.initialize(
+    url: supabaseUrl,
+    anonKey: supabaseKey,
+  );
   runApp(MainApp(SupabaseUserRepo(Supabase.instance.client)));
 }

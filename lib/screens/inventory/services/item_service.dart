@@ -1,70 +1,87 @@
+import 'package:inventocharm/models/item.dart';
 import 'package:inventocharm/services/supabase_client.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+class DuplicateItemException implements Exception {
+  const DuplicateItemException();
+
+  @override
+  String toString() => 'An item with this barcode already exists.';
+}
 
 class ItemService {
-  // Add a new item
-  Future<void> addItem({
-    required String name,
-    required String price,
-    required String quantity,
-    required String image,
-    required String description,
-    required String cost,
-  }) async {
+  String get _ownerId {
+    final id = supabase.auth.currentUser?.id;
+    if (id == null) throw StateError('Sign in before managing items.');
+    return id;
+  }
+
+  Future<void> addItem(Item item) async {
+    final ownerId = _ownerId;
+    final normalizedCode = item.code?.trim();
+
+    if (normalizedCode != null && normalizedCode.isNotEmpty) {
+      final existing = await supabase
+          .from('items')
+          .select('id')
+          .eq('owner_id', ownerId)
+          .eq('code', normalizedCode)
+          .maybeSingle();
+      if (existing != null) throw const DuplicateItemException();
+    }
+
     try {
       await supabase.from('items').insert({
-        'owner_id': supabase.auth.currentUser!.id,
-        'name': name,
-        'price': price,
-        'quantity': quantity,
-        'image': image,
-        'description': description,
-        'cost': cost,
+        'owner_id': ownerId,
+        'name': item.name.trim(),
+        'price': item.price,
+        'quantity': item.quantity,
+        'image': item.image,
+        'description': item.description.trim(),
+        'cost': item.cost,
+        'code': (normalizedCode?.isEmpty ?? true) ? null : normalizedCode,
       });
-    } catch (e) {
-      print('Error adding item: $e');
+    } on PostgrestException catch (error) {
+      if (error.code == '23505') throw const DuplicateItemException();
+      rethrow;
     }
   }
 
-  // Update an existing item
-  Future<void> updateItem(
-    String itemId, {
-    String? name,
-    String? price,
-    String? quantity,
-    String? image,
-    String? description,
-    String? cost,
-  }) async {
-    try {
-      await supabase.from('items').update({
-        if (name != null) 'name': name,
-        if (price != null) 'price': price,
-        if (quantity != null) 'quantity': quantity,
-        if (image != null) 'image': image,
-        if (description != null) 'description': description,
-        if (cost != null) 'cost': cost,
-      }).eq('id', itemId);
-    } catch (e) {
-      print('Error updating item: $e');
-    }
+  Future<void> updateItem(Item item) async {
+    await supabase.from('items').update(item.toJson()).eq('id', item.id);
   }
 
-  // Delete an item
   Future<void> deleteItem(String itemId) async {
-    try {
-      await supabase.from('items').delete().eq('id', itemId);
-    } catch (e) {
-      print('Error deleting item: $e');
+    final deleted = await supabase
+        .from('items')
+        .delete()
+        .eq('id', itemId)
+        .eq('owner_id', _ownerId)
+        .select('id');
+    if (deleted.isEmpty) {
+      throw StateError(
+        'Item was not deleted. It may already be deleted, or your Supabase '
+        'row-level security policy may not allow deleting it.',
+      );
     }
   }
 
-  // Get all items
-  Future<List<Map<String, dynamic>>> getItems() async {
-    final rows = await supabase.from('items').select();
-    return rows;
+  Future<List<Item>> getItems() async {
+    final rows = await supabase
+        .from('items')
+        .select()
+        .eq('owner_id', _ownerId)
+        .order('created_at', ascending: false);
+    return rows.map(Item.fromJson).toList();
   }
 
-  Future<Map<String, dynamic>> getItem(String itemId) async {
-    return await supabase.from('items').select().eq('id', itemId).single();
+  Future<Item?> getItem(String itemId) async {
+    final row = await supabase
+        .from('items')
+        .select()
+        .eq('id', itemId)
+        .eq('owner_id', _ownerId)
+        .maybeSingle();
+    return row == null ? null : Item.fromJson(row);
   }
 }

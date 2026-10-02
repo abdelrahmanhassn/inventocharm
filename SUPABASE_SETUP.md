@@ -25,6 +25,10 @@ create table public.items (
   created_at timestamptz not null default now()
 );
 
+create unique index if not exists items_owner_code_unique
+  on public.items (owner_id, code)
+  where code is not null and btrim(code) <> '';
+
 create table public.sales (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null references auth.users (id) on delete cascade,
@@ -162,7 +166,8 @@ begin
     v_sale_items := v_sale_items || jsonb_build_array(jsonb_build_object(
       'itemName', v_item.name,
       'quantity', v_quantity::text,
-      'price', v_item.price::text
+      'price', v_item.price::text,
+      'cost', v_item.cost::text
     ));
   end loop;
 
@@ -180,11 +185,17 @@ revoke all on function public.record_sale(text, text, jsonb) from public;
 grant execute on function public.record_sale(text, text, jsonb) to authenticated;
 ```
 
+For an existing Supabase project, run the updated `public.record_sale` function
+definition and its `grant execute` statement above. New sales will then include
+the item's unit cost snapshot. Older sales do not contain that historical cost,
+so the dashboard reports realized sales profit as unavailable while those
+records remain rather than estimating it from current item costs.
+
 Run the app with the project's URL and publishable/anon key (never use the
 service-role key in a client app):
 
 ```text
-flutter run --dart-define=SUPABASE_URL=https://YOUR_PROJECT.supabase.co --dart-define=SUPABASE_ANON_KEY=YOUR_PUBLISHABLE_OR_ANON_KEY
+flutter run --dart-define=SUPABASE_URL=https://YOUR_PROJECT.supabase.co --dart-define=SUPABASE_PUBLISHABLE_KEY=YOUR_SUPABASE_PUBLISHABLE_KEY
 ```
 
 Email-confirmation behavior follows the project's Auth settings. Existing

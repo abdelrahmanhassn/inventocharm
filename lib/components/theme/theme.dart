@@ -23,7 +23,7 @@ class CustomTheme {
     useMaterial3: true,
     fontFamily: 'Poppins',
     primaryColor: Colors.blue,
-    brightness: Brightness.light,
+    brightness: Brightness.dark,
     scaffoldBackgroundColor: Colors.black,
     textTheme: CustomTextTheme.darkTextTheme,
     elevatedButtonTheme: CustomElevatedButtonTheme.darkElevatedButtonTheme,

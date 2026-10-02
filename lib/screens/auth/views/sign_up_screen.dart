@@ -43,9 +43,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(message)),
           );
-          if (!state.requiresEmailConfirmation && context.mounted) {
-            Navigator.pop(context);
-          }
         } else if (state is SignUpProcess) {
           setState(() {
             signUpRequired = true;
